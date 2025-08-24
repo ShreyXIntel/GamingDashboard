@@ -1,7 +1,13 @@
-const App = () => {
+import React from 'react';
+import CPUGamingDashboard from './CPUGamingDashboard';
+import './index.css';
+
+function App() {
   return (
-    <div>Hello Shrey</div>
-  )
+    <div className="App">
+      <CPUGamingDashboard />
+    </div>
+  );
 }
 
-export default App
+export default App;
