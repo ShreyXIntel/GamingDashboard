@@ -1,6 +1,19 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { ChevronDown, ChevronRight, Calendar, BarChart3, ChevronUp } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+// Move mock games data outside component to avoid recreating on each render
+const mockGames = [
+  'Cyberpunk 2077', 'Call of Duty: MW III', 'Assassin\'s Creed Mirage', 'Baldur\'s Gate 3',
+  'Starfield', 'Forza Horizon 5', 'Red Dead Redemption 2', 'The Witcher 3',
+  'Horizon Zero Dawn', 'Control', 'Metro Exodus', 'Shadow of the Tomb Raider',
+  'Total War: Warhammer III', 'F1 23', 'Far Cry 6', 'Resident Evil 4',
+  'Spider-Man Remastered', 'God of War', 'Death Stranding', 'Hitman 3',
+  'Watch Dogs: Legion', 'Dirt 5', 'Borderlands 3', 'The Division 2',
+  'Gears 5', 'Strange Brigade', 'Serious Sam 4', 'World War Z',
+  'Rainbow Six Siege', 'Overwatch 2', 'Valorant', 'Counter-Strike 2',
+  'Dota 2', 'League of Legends'
+];
 
 const CPUGamingDashboard = () => {
   const [selectedProgram, setSelectedProgram] = useState('');
@@ -64,27 +77,14 @@ const CPUGamingDashboard = () => {
     });
   };
 
-  // Mock games data (34 games)
-  const mockGames = [
-    'Cyberpunk 2077', 'Call of Duty: MW III', 'Assassin\'s Creed Mirage', 'Baldur\'s Gate 3',
-    'Starfield', 'Forza Horizon 5', 'Red Dead Redemption 2', 'The Witcher 3',
-    'Horizon Zero Dawn', 'Control', 'Metro Exodus', 'Shadow of the Tomb Raider',
-    'Total War: Warhammer III', 'F1 23', 'Far Cry 6', 'Resident Evil 4',
-    'Spider-Man Remastered', 'God of War', 'Death Stranding', 'Hitman 3',
-    'Watch Dogs: Legion', 'Dirt 5', 'Borderlands 3', 'The Division 2',
-    'Gears 5', 'Strange Brigade', 'Serious Sam 4', 'World War Z',
-    'Rainbow Six Siege', 'Overwatch 2', 'Valorant', 'Counter-Strike 2',
-    'Dota 2', 'League of Legends'
-  ];
-
-  // Generate mock benchmark data
-  const generateMockScores = () => {
+  // Use useCallback to memoize the function that generates mock scores
+  const generateMockScores = useCallback(() => {
     return mockGames.map(game => ({
       game,
       score: Math.floor(Math.random() * 100) + 60, // 60-160 FPS range
       percentile: Math.floor(Math.random() * 40) + 60 // 60-100 percentile
     }));
-  };
+  }, []);
 
   // Generate mock CPU metrics for expanded game view
   const generateCPUMetrics = (gameName) => {
@@ -149,7 +149,7 @@ const CPUGamingDashboard = () => {
       return generateMockScores();
     }
     return [];
-  }, [selectedSKU, selectedBuild]);
+  }, [selectedSKU, selectedBuild, generateMockScores]);
 
   const averageScore = useMemo(() => {
     if (benchmarkData.length === 0) return 0;
