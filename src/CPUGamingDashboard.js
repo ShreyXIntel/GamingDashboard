@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronDown, ChevronRight, Calendar, TrendingUp, BarChart3, ChevronUp } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { ChevronDown, ChevronRight, Calendar, BarChart3, ChevronUp } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const CPUGamingDashboard = () => {
   const [selectedProgram, setSelectedProgram] = useState('');
