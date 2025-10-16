@@ -1,5 +1,5 @@
 import './App.css'
-import SoCWatchAnalyzer from './soCWatchAnalyzer'
+import SoCWatchAnalyzer from './socWatchAnalyzer'
 
 function App() {
 
