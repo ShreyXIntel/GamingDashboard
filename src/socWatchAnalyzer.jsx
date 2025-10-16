@@ -40,6 +40,85 @@ const FrequencyChart = memo(({ data }) => (
 ));
 
 const SoCWatchAnalyzer = () => {
+  // Color Palettes
+  const colorPalettes = {
+    default: {
+      name: 'Teal Fresh',
+      headerBg: '#4fb39c',
+      headerText: '#111827',
+      sidebarBg: '#89ddd6',
+      buttonPrimary: '#2563eb',
+      buttonSecondary: '#8b3ecf',
+      buttonSuccess: '#55d355',
+      buttonDanger: '#d00000',
+      background: '#fffbeb',
+      cardBg: '#ffffff',
+      tableHeaderBg: '#4fb39c',
+      tableHeaderText: '#111827',
+      accentColor: '#ff6b9d'
+    },
+    vibrant: {
+      name: 'Coral Sunset',
+      headerBg: '#ff6b6b',
+      headerText: '#111827',
+      sidebarBg: '#ffb6b6',
+      buttonPrimary: '#4ecdc4',
+      buttonSecondary: '#ff6b9d',
+      buttonSuccess: '#51cf66',
+      buttonDanger: '#ff4757',
+      background: '#fff8f0',
+      cardBg: '#ffffff',
+      tableHeaderBg: '#ff6b6b',
+      tableHeaderText: '#111827',
+      accentColor: '#ffd93d'
+    },
+    pastel: {
+      name: 'Soft Pastels',
+      headerBg: '#b4d7d8',
+      headerText: '#111827',
+      sidebarBg: '#e0f2f1',
+      buttonPrimary: '#a6c1ee',
+      buttonSecondary: '#dda6e6',
+      buttonSuccess: '#c3e6c3',
+      buttonDanger: '#f5b5b5',
+      background: '#fefefe',
+      cardBg: '#ffffff',
+      tableHeaderBg: '#b4d7d8',
+      tableHeaderText: '#111827',
+      accentColor: '#ffd6a5'
+    },
+    ocean: {
+      name: 'Ocean Breeze',
+      headerBg: '#3b82f6',
+      headerText: '#ffffff',
+      sidebarBg: '#93c5fd',
+      buttonPrimary: '#06b6d4',
+      buttonSecondary: '#8b5cf6',
+      buttonSuccess: '#10b981',
+      buttonDanger: '#ef4444',
+      background: '#f0f9ff',
+      cardBg: '#ffffff',
+      tableHeaderBg: '#3b82f6',
+      tableHeaderText: '#ffffff',
+      accentColor: '#fbbf24'
+    },
+    sunset: {
+      name: 'Warm Sunset',
+      headerBg: '#f97316',
+      headerText: '#111827',
+      sidebarBg: '#fed7aa',
+      buttonPrimary: '#dc2626',
+      buttonSecondary: '#c026d3',
+      buttonSuccess: '#65a30d',
+      buttonDanger: '#b91c1c',
+      background: '#fffbeb',
+      cardBg: '#ffffff',
+      tableHeaderBg: '#f97316',
+      tableHeaderText: '#111827',
+      accentColor: '#fde047'
+    }
+  };
+
   // State: SKUs contain directories, each directory contains multiple games
   const [skus, setSkus] = useState([]); // [{name, games: [], isArchived: false}]
   const [archivedSkus, setArchivedSkus] = useState([]); // [{name, games: [], isArchived: true}]
@@ -53,8 +132,28 @@ const SoCWatchAnalyzer = () => {
   const [newSkuName, setNewSkuName] = useState('');
   const [screenWidth, setScreenWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920);
   const [userComparisonLimit, setUserComparisonLimit] = useState(null); // null = use auto, otherwise user preference
+  const [currentPalette, setCurrentPalette] = useState(() => {
+    // Load saved palette from localStorage
+    if (typeof window !== 'undefined') {
+      const savedPalette = localStorage.getItem('socWatchColorPalette');
+      if (savedPalette && colorPalettes[savedPalette]) {
+        return savedPalette;
+      }
+    }
+    return 'default';
+  });
 
   const year = new Date().getFullYear();
+
+  // Get current colors
+  const colors = colorPalettes[currentPalette];
+
+  // Save palette preference to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('socWatchColorPalette', currentPalette);
+    }
+  }, [currentPalette]);
 
   // Calculate max comparisons based on screen width (absolute maximum that can fit)
   const screenMaxComparisons = useMemo(() => {
@@ -523,9 +622,9 @@ const SoCWatchAnalyzer = () => {
     const hasMultipleFiles = totalFiles > 1;
 
     return (
-      <div className="w-64 bg-[#89ddd6] border-r-[3px] border-gray-900 h-full overflow-y-auto flex-shrink-0 sidebar-scroll">
-        <div className="p-4 border-b-[3px] border-gray-900 bg-[#4fb39c]">
-          <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
+      <div className="w-64 border-r-[3px] border-gray-900 h-full overflow-y-auto flex-shrink-0 sidebar-scroll" style={{ backgroundColor: colors.sidebarBg }}>
+        <div className="p-4 border-b-[3px] border-gray-900" style={{ backgroundColor: colors.headerBg }}>
+          <h2 className="text-xl font-black flex items-center gap-2" style={{ color: colors.headerText }}>
             <Folder className="w-5 h-5" />
             Navigation
           </h2>
@@ -537,8 +636,9 @@ const SoCWatchAnalyzer = () => {
             <button
               onClick={() => setActiveView('overall')}
               className={`w-full text-left px-3 py-2 rounded-[4px] border-[3px] border-gray-900 font-bold transition-all ${
-                activeView === 'overall' ? 'bg-[#2563eb] text-white' : 'bg-white text-gray-900'
+                activeView === 'overall' ? 'text-white' : 'bg-white text-gray-900'
               }`}
+              style={activeView === 'overall' ? { backgroundColor: colors.buttonPrimary } : {}}
             >
               <BarChart3 className="w-4 h-4 inline mr-2" />
               Overall Threading
@@ -547,8 +647,9 @@ const SoCWatchAnalyzer = () => {
               onClick={() => setActiveView('focused')}
               disabled={!selectedGame}
               className={`w-full text-left px-3 py-2 rounded-[4px] border-[3px] border-gray-900 font-bold transition-all ${
-                activeView === 'focused' ? 'bg-[#2563eb] text-white' : 'bg-white text-gray-900'
+                activeView === 'focused' ? 'text-white' : 'bg-white text-gray-900'
               } ${!selectedGame ? 'opacity-50 cursor-not-allowed' : ''}`}
+              style={activeView === 'focused' ? { backgroundColor: colors.buttonPrimary } : {}}
             >
               <FileText className="w-4 h-4 inline mr-2" />
               Focused Analysis
@@ -565,9 +666,10 @@ const SoCWatchAnalyzer = () => {
                 }
               }}
               disabled={!hasMultipleFiles}
-              className={`w-full text-left px-3 py-2 rounded-[4px] border-[3px] border-gray-900 font-bold transition-all ${
-                comparisonMode ? 'bg-[#55d355] text-white' : 'bg-[#8b3ecf] text-white'
-              } ${!hasMultipleFiles ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`w-full text-left px-3 py-2 rounded-[4px] border-[3px] border-gray-900 font-bold transition-all text-white ${
+                !hasMultipleFiles ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+              style={{ backgroundColor: comparisonMode ? colors.buttonSuccess : colors.buttonSecondary }}
               title={`Compare up to ${maxComparisons} games`}
             >
               <TrendingUp className="w-4 h-4 inline mr-2" />
@@ -580,7 +682,8 @@ const SoCWatchAnalyzer = () => {
         <div className="p-3 border-b-[3px] border-gray-900">
           <button
             onClick={() => setShowArchived(!showArchived)}
-            className="w-full text-left px-3 py-2 rounded-[4px] border-[3px] border-gray-900 font-bold transition-all bg-[#99a75d] text-white"
+            className="w-full text-left px-3 py-2 rounded-[4px] border-[3px] border-gray-900 font-bold transition-all text-white"
+            style={{ backgroundColor: colors.buttonSecondary }}
           >
             <Archive className="w-4 h-4 inline mr-2" />
             {showArchived ? 'Show Active' : `Show Archived (${archivedSkus.length})`}
@@ -604,7 +707,8 @@ const SoCWatchAnalyzer = () => {
                       <div className="flex gap-1">
                         <button
                           onClick={() => unarchiveSku(sku.name)}
-                          className="p-1 bg-[#55d355] border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
+                          className="p-1 border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
+                          style={{ backgroundColor: colors.buttonSuccess }}
                           title="Unarchive"
                         >
                           <Upload className="w-3 h-3 text-white" />
@@ -622,7 +726,8 @@ const SoCWatchAnalyzer = () => {
                               }
                             });
                           }}
-                          className="p-1 bg-[#d00000] border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
+                          className="p-1 border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
+                          style={{ backgroundColor: colors.buttonDanger }}
                           title="Delete Permanently"
                         >
                           <Trash2 className="w-3 h-3 text-white" />
@@ -669,14 +774,16 @@ const SoCWatchAnalyzer = () => {
                         <>
                           <button
                             onClick={() => confirmRenameSku(sku.name)}
-                            className="p-1 bg-[#55d355] border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
+                            className="p-1 border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
+                            style={{ backgroundColor: colors.buttonSuccess }}
                             title="Confirm Rename"
                           >
                             <Check className="w-3 h-3 text-white" />
                           </button>
                           <button
                             onClick={cancelRenamingSku}
-                            className="p-1 bg-[#f59e0b] border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
+                            className="p-1 border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
+                            style={{ backgroundColor: colors.accentColor }}
                             title="Cancel"
                           >
                             <X className="w-3 h-3 text-white" />
@@ -689,7 +796,8 @@ const SoCWatchAnalyzer = () => {
                               e.stopPropagation();
                               startRenamingSku(sku.name);
                             }}
-                            className="p-1 bg-[#2563eb] border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
+                            className="p-1 border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
+                            style={{ backgroundColor: colors.buttonPrimary }}
                             title="Rename"
                           >
                             <Edit2 className="w-3 h-3 text-white" />
@@ -699,7 +807,8 @@ const SoCWatchAnalyzer = () => {
                               e.stopPropagation();
                               archiveSku(sku.name);
                             }}
-                            className="p-1 bg-[#99a75d] border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
+                            className="p-1 border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
+                            style={{ backgroundColor: colors.buttonSecondary }}
                             title="Archive"
                           >
                             <Archive className="w-3 h-3 text-white" />
@@ -709,7 +818,8 @@ const SoCWatchAnalyzer = () => {
                               e.stopPropagation();
                               removeSku(sku.name);
                             }}
-                            className="p-1 bg-[#d00000] border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
+                            className="p-1 border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
+                            style={{ backgroundColor: colors.buttonDanger }}
                             title="Remove Directory"
                           >
                             <Trash2 className="w-3 h-3 text-white" />
@@ -724,13 +834,15 @@ const SoCWatchAnalyzer = () => {
                       return (
                         <div
                           key={`${sku.name}-${game.name}-${idx}`}
-                          className={`flex items-center gap-2 rounded-[4px] border-[2px] border-gray-900 transition-all ${
-                            comparisonMode && isSelected
-                              ? 'bg-[#2563eb] border-[3px]'
+                          className="flex items-center gap-2 rounded-[4px] border-[2px] border-gray-900 transition-all"
+                          style={{
+                            backgroundColor: comparisonMode && isSelected
+                              ? colors.buttonPrimary
                               : selectedGame?.name === game.name && selectedGame?.skuName === sku.name
-                              ? 'bg-[#ffd500]'
-                              : 'bg-white'
-                          }`}
+                              ? colors.accentColor
+                              : colors.cardBg,
+                            borderWidth: comparisonMode && isSelected ? '3px' : '2px'
+                          }}
                         >
                           {comparisonMode && (
                             <button
@@ -738,12 +850,11 @@ const SoCWatchAnalyzer = () => {
                                 e.stopPropagation();
                                 toggleGameComparison(game, sku.name);
                               }}
-                              className={`ml-2 w-4 h-4 rounded-[2px] border-[2px] border-gray-900 flex items-center justify-center transition-all ${
-                                isSelected ? 'bg-white' : 'bg-white'
-                              }`}
+                              className="ml-2 w-4 h-4 rounded-[2px] border-[2px] border-gray-900 flex items-center justify-center transition-all"
+                              style={{ backgroundColor: colors.cardBg }}
                               title="Select for comparison"
                             >
-                              {isSelected && <div className="w-2 h-2 bg-[#2563eb] rounded-[1px]"></div>}
+                              {isSelected && <div className="w-2 h-2 rounded-[1px]" style={{ backgroundColor: colors.buttonPrimary }}></div>}
                             </button>
                           )}
                           <button
@@ -776,7 +887,8 @@ const SoCWatchAnalyzer = () => {
                                   }
                                 });
                               }}
-                              className="p-1 mr-1 bg-[#d00000] border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
+                              className="p-1 mr-1 border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
+                              style={{ backgroundColor: colors.buttonDanger }}
                               title="Remove File"
                             >
                               <X className="w-3 h-3 text-white" />
@@ -848,7 +960,8 @@ const SoCWatchAnalyzer = () => {
                 setUserComparisonLimit(newLimit);
               }}
               disabled={maxComparisons <= 2}
-              className="px-3 py-1 bg-[#ef4444] border-[3px] border-gray-900 rounded-[4px] font-black text-white text-lg hover:-translate-y-[1px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1 border-[3px] border-gray-900 rounded-[4px] font-black text-white text-lg hover:-translate-y-[1px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: colors.buttonDanger }}
               title="Show fewer comparison tiles"
             >
               −
@@ -862,14 +975,16 @@ const SoCWatchAnalyzer = () => {
                 setUserComparisonLimit(newLimit);
               }}
               disabled={maxComparisons >= screenMaxComparisons}
-              className="px-3 py-1 bg-[#55d355] border-[3px] border-gray-900 rounded-[4px] font-black text-white text-lg hover:-translate-y-[1px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1 border-[3px] border-gray-900 rounded-[4px] font-black text-white text-lg hover:-translate-y-[1px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: colors.buttonSuccess }}
               title="Show more comparison tiles"
             >
               +
             </button>
             <button
               onClick={() => setUserComparisonLimit(null)}
-              className="px-3 py-1 bg-[#2563eb] border-[3px] border-gray-900 rounded-[4px] font-bold text-white text-sm hover:-translate-y-[1px] transition-all"
+              className="px-3 py-1 border-[3px] border-gray-900 rounded-[4px] font-bold text-white text-sm hover:-translate-y-[1px] transition-all"
+              style={{ backgroundColor: colors.buttonPrimary }}
               title="Reset to default (6)"
             >
               Reset
@@ -882,13 +997,13 @@ const SoCWatchAnalyzer = () => {
           <div className="overflow-x-auto">
             <table className="w-full border-[3px] border-gray-900">
               <thead>
-                <tr className="bg-[#4fb39c]">
-                  <th className="border-[3px] border-gray-900 px-3 py-3 text-left font-black text-gray-900 sticky left-0 bg-[#4fb39c] w-40">Metric</th>
+                <tr style={{ backgroundColor: colors.tableHeaderBg }}>
+                  <th className="border-[3px] border-gray-900 px-3 py-3 text-left font-black sticky left-0 w-40" style={{ backgroundColor: colors.tableHeaderBg, color: colors.tableHeaderText }}>Metric</th>
                   {selectedGamesForComparison.map((item, idx) => (
-                    <th key={idx} className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-gray-900 min-w-[200px]">
+                    <th key={idx} className="border-[3px] border-gray-900 px-4 py-3 text-center font-black min-w-[200px]" style={{ color: colors.tableHeaderText }}>
                       <div className="flex flex-col items-center justify-center gap-1">
                         <div className="text-base leading-tight max-w-full break-words">{item.game.name}</div>
-                        <div className="text-sm font-bold text-gray-700">{item.skuName}</div>
+                        <div className="text-sm font-bold opacity-75">{item.skuName}</div>
                       </div>
                     </th>
                   ))}
@@ -1020,13 +1135,15 @@ const SoCWatchAnalyzer = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => toggleComparisonRowExpansion(gameIdx)}
-                    className="px-4 py-2 bg-[#2563eb] border-[3px] border-gray-900 rounded-[4px] font-bold text-white hover:-translate-y-[1px] transition-all"
+                    className="px-4 py-2 border-[3px] border-gray-900 rounded-[4px] font-bold text-white hover:-translate-y-[1px] transition-all"
+                    style={{ backgroundColor: colors.buttonPrimary }}
                   >
                     {isExpanded ? 'Hide Core Stats' : 'Show Core Stats'}
                   </button>
                   <button
                     onClick={() => toggleChartsVisibility(gameIdx)}
-                    className="px-4 py-2 bg-[#8b3ecf] border-[3px] border-gray-900 rounded-[4px] font-bold text-white hover:-translate-y-[1px] transition-all"
+                    className="px-4 py-2 border-[3px] border-gray-900 rounded-[4px] font-bold text-white hover:-translate-y-[1px] transition-all"
+                    style={{ backgroundColor: colors.buttonSecondary }}
                   >
                     {showCharts ? 'Hide Charts' : 'Show Charts'}
                   </button>
@@ -1035,18 +1152,18 @@ const SoCWatchAnalyzer = () => {
 
               {/* Individual Core Stats (Expandable) */}
               {isExpanded && (
-                <div className="mb-6 p-4 bg-[#f3f4f6] border-[3px] border-gray-900 rounded-[4px]">
+                <div className="mb-6 p-4 border-[3px] border-gray-900 rounded-[4px]" style={{ backgroundColor: colors.background }}>
                   <div className="grid grid-cols-2 gap-6">
                     {/* P-Cores */}
                     <div>
                       <h4 className="text-base font-black mb-2 text-gray-900">P-Core Individual Stats</h4>
                       <div className="flex flex-wrap gap-2">
                         {pCores.map(core => (
-                          <div key={core.core} className="inline-flex items-center gap-2 bg-white border-[2px] border-gray-900 rounded-[4px] px-2 py-1">
+                          <div key={core.core} className="inline-flex items-center gap-2 border-[2px] border-gray-900 rounded-[4px] px-2 py-1" style={{ backgroundColor: colors.cardBg }}>
                             <span className="font-bold text-gray-900 text-xs">P{core.core}</span>
                             <div className="flex flex-col items-end">
-                              <span className="font-black text-[#2563eb] text-xs">C0: {core.active.toFixed(1)}%</span>
-                              <span className="font-bold text-[#4338ca] text-[10px]">P0: {(core.freq || 0).toFixed(0)} MHz</span>
+                              <span className="font-black text-xs" style={{ color: colors.buttonPrimary }}>C0: {core.active.toFixed(1)}%</span>
+                              <span className="font-bold text-[10px]" style={{ color: colors.accentColor }}>P0: {(core.freq || 0).toFixed(0)} MHz</span>
                             </div>
                           </div>
                         ))}
@@ -1057,11 +1174,11 @@ const SoCWatchAnalyzer = () => {
                       <h4 className="text-base font-black mb-2 text-gray-900">E-Core Individual Stats</h4>
                       <div className="flex flex-wrap gap-2">
                         {eCores.map(core => (
-                          <div key={core.core} className="inline-flex items-center gap-2 bg-white border-[2px] border-gray-900 rounded-[4px] px-2 py-1">
+                          <div key={core.core} className="inline-flex items-center gap-2 border-[2px] border-gray-900 rounded-[4px] px-2 py-1" style={{ backgroundColor: colors.cardBg }}>
                             <span className="font-bold text-gray-900 text-xs">E{core.core}</span>
                             <div className="flex flex-col items-end">
-                              <span className="font-black text-[#60a5fa] text-xs">C0: {core.active.toFixed(1)}%</span>
-                              <span className="font-bold text-[#3b82f6] text-[10px]">P0: {(core.freq || 0).toFixed(0)} MHz</span>
+                              <span className="font-black text-xs" style={{ color: colors.buttonSecondary }}>C0: {core.active.toFixed(1)}%</span>
+                              <span className="font-bold text-[10px]" style={{ color: colors.accentColor }}>P0: {(core.freq || 0).toFixed(0)} MHz</span>
                             </div>
                           </div>
                         ))}
@@ -1224,13 +1341,13 @@ const SoCWatchAnalyzer = () => {
                   </div>
 
                   {/* Activity Chart */}
-                  <div className="bg-white p-4 border-[3px] border-gray-900 rounded-[4px]">
+                  <div className="p-4 border-[3px] border-gray-900 rounded-[4px]" style={{ backgroundColor: colors.cardBg }}>
                     <h3 className="text-lg font-black mb-3 text-gray-900">Activity Distribution</h3>
                     <ActivityChart data={game.cStateData} />
                   </div>
 
                   {/* Frequency Chart */}
-                  <div className="bg-white p-4 border-[3px] border-gray-900 rounded-[4px]">
+                  <div className="p-4 border-[3px] border-gray-900 rounded-[4px]" style={{ backgroundColor: colors.cardBg }}>
                     <h3 className="text-lg font-black mb-3 text-gray-900">Frequency Distribution</h3>
                     <FrequencyChart data={game.cStateData} />
                   </div>
@@ -1277,15 +1394,15 @@ const SoCWatchAnalyzer = () => {
               <div className="overflow-x-auto">
                 <table className="w-full border-[3px] border-gray-900">
                   <thead>
-                    <tr className="bg-[#4fb39c]">
-                      <th className="border-[3px] border-gray-900 px-4 py-3 text-left font-black text-gray-900">Game</th>
-                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-gray-900">P-Core C0 %</th>
-                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-gray-900">E-Core C0 %</th>
-                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-gray-900">P-Core P0 (MHz)</th>
-                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-gray-900">E-Core P0 (MHz)</th>
-                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-gray-900">P/E Ratio</th>
-                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-gray-900">Model</th>
-                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-gray-900">Details</th>
+                    <tr style={{ backgroundColor: colors.tableHeaderBg }}>
+                      <th className="border-[3px] border-gray-900 px-4 py-3 text-left font-black" style={{ color: colors.tableHeaderText }}>Game</th>
+                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black" style={{ color: colors.tableHeaderText }}>P-Core C0 %</th>
+                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black" style={{ color: colors.tableHeaderText }}>E-Core C0 %</th>
+                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black" style={{ color: colors.tableHeaderText }}>P-Core P0 (MHz)</th>
+                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black" style={{ color: colors.tableHeaderText }}>E-Core P0 (MHz)</th>
+                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black" style={{ color: colors.tableHeaderText }}>P/E Ratio</th>
+                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black" style={{ color: colors.tableHeaderText }}>Model</th>
+                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black" style={{ color: colors.tableHeaderText }}>Details</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1324,10 +1441,10 @@ const SoCWatchAnalyzer = () => {
                             >
                               {game.insights.eCoreActivity}
                             </td>
-                            <td className="border-[3px] border-gray-900 px-4 py-3 text-center font-bold text-gray-900 bg-[#e0e7ff]">
+                            <td className="border-[3px] border-gray-900 px-4 py-3 text-center font-bold text-gray-900" style={{ backgroundColor: colors.background }}>
                               {game.insights.pCoreAvgFreq}
                             </td>
-                            <td className="border-[3px] border-gray-900 px-4 py-3 text-center font-bold text-gray-900 bg-[#dbeafe]">
+                            <td className="border-[3px] border-gray-900 px-4 py-3 text-center font-bold text-gray-900" style={{ backgroundColor: colors.background }}>
                               {game.insights.eCoreAvgFreq}
                             </td>
                             <td
@@ -1348,7 +1465,8 @@ const SoCWatchAnalyzer = () => {
                                   e.stopPropagation();
                                   toggleRowExpansion(sku.name, idx);
                                 }}
-                                className="px-3 py-1 bg-[#2563eb] border-[2px] border-gray-900 rounded-[4px] font-bold text-white text-sm hover:-translate-y-[1px] transition-all"
+                                className="px-3 py-1 border-[2px] border-gray-900 rounded-[4px] font-bold text-white text-sm hover:-translate-y-[1px] transition-all"
+                                style={{ backgroundColor: colors.buttonPrimary }}
                               >
                                 {isExpanded ? 'Hide' : 'View'}
                               </button>
@@ -1356,18 +1474,18 @@ const SoCWatchAnalyzer = () => {
                           </tr>
                           {isExpanded && (
                             <tr>
-                              <td colSpan="8" className="border-[3px] border-gray-900 bg-[#f3f4f6] px-6 py-4">
+                              <td colSpan="8" className="border-[3px] border-gray-900 px-6 py-4" style={{ backgroundColor: colors.background }}>
                                 <div className="grid grid-cols-2 gap-6">
                                   {/* P-Cores */}
                                   <div>
                                     <h4 className="text-base font-black mb-2 text-gray-900">P-Core Individual Stats</h4>
                                     <div className="flex flex-wrap gap-2">
                                       {pCores.map(core => (
-                                        <div key={core.core} className="inline-flex items-center gap-2 bg-white border-[2px] border-gray-900 rounded-[4px] px-2 py-1">
+                                        <div key={core.core} className="inline-flex items-center gap-2 border-[2px] border-gray-900 rounded-[4px] px-2 py-1" style={{ backgroundColor: colors.cardBg }}>
                                           <span className="font-bold text-gray-900 text-xs">P{core.core}</span>
                                           <div className="flex flex-col items-end">
-                                            <span className="font-black text-[#2563eb] text-xs">C0: {core.active.toFixed(1)}%</span>
-                                            <span className="font-bold text-[#4338ca] text-[10px]">P0: {(core.freq || 0).toFixed(0)} MHz</span>
+                                            <span className="font-black text-xs" style={{ color: colors.buttonPrimary }}>C0: {core.active.toFixed(1)}%</span>
+                                            <span className="font-bold text-[10px]" style={{ color: colors.accentColor }}>P0: {(core.freq || 0).toFixed(0)} MHz</span>
                                           </div>
                                         </div>
                                       ))}
@@ -1378,11 +1496,11 @@ const SoCWatchAnalyzer = () => {
                                     <h4 className="text-base font-black mb-2 text-gray-900">E-Core Individual Stats</h4>
                                     <div className="flex flex-wrap gap-2">
                                       {eCores.map(core => (
-                                        <div key={core.core} className="inline-flex items-center gap-2 bg-white border-[2px] border-gray-900 rounded-[4px] px-2 py-1">
+                                        <div key={core.core} className="inline-flex items-center gap-2 border-[2px] border-gray-900 rounded-[4px] px-2 py-1" style={{ backgroundColor: colors.cardBg }}>
                                           <span className="font-bold text-gray-900 text-xs">E{core.core}</span>
                                           <div className="flex flex-col items-end">
-                                            <span className="font-black text-[#60a5fa] text-xs">C0: {core.active.toFixed(1)}%</span>
-                                            <span className="font-bold text-[#3b82f6] text-[10px]">P0: {(core.freq || 0).toFixed(0)} MHz</span>
+                                            <span className="font-black text-xs" style={{ color: colors.buttonSecondary }}>C0: {core.active.toFixed(1)}%</span>
+                                            <span className="font-bold text-[10px]" style={{ color: colors.accentColor }}>P0: {(core.freq || 0).toFixed(0)} MHz</span>
                                           </div>
                                         </div>
                                       ))}
@@ -1457,22 +1575,22 @@ const SoCWatchAnalyzer = () => {
         </div>
 
         {/* Key Metrics */}
-        <Cards className="p-6 bg-[#ec8385]">
+        <Cards className="p-6">
           <h2 className="text-2xl font-black mb-4 text-gray-900">Key Metrics</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white border-[3px] border-gray-900 p-4 rounded-[4px]">
+            <div className="border-[3px] border-gray-900 p-4 rounded-[4px]" style={{ backgroundColor: colors.cardBg }}>
               <div className="text-sm font-bold text-gray-600">P-Core Activity</div>
               <div className="text-2xl font-black text-gray-900">{selectedGame.insights.pCoreActivity}%</div>
             </div>
-            <div className="bg-white border-[3px] border-gray-900 p-4 rounded-[4px]">
+            <div className="border-[3px] border-gray-900 p-4 rounded-[4px]" style={{ backgroundColor: colors.cardBg }}>
               <div className="text-sm font-bold text-gray-600">E-Core Activity</div>
               <div className="text-2xl font-black text-gray-900">{selectedGame.insights.eCoreActivity}%</div>
             </div>
-            <div className="bg-white border-[3px] border-gray-900 p-4 rounded-[4px]">
+            <div className="border-[3px] border-gray-900 p-4 rounded-[4px]" style={{ backgroundColor: colors.cardBg }}>
               <div className="text-sm font-bold text-gray-600">P/E Ratio</div>
               <div className="text-2xl font-black text-gray-900">{selectedGame.insights.threadingRatio}</div>
             </div>
-            <div className="bg-white border-[3px] border-gray-900 p-4 rounded-[4px]">
+            <div className="border-[3px] border-gray-900 p-4 rounded-[4px]" style={{ backgroundColor: colors.cardBg }}>
               <div className="text-sm font-bold text-gray-600">Threading Model</div>
               <div className="text-xl font-black text-gray-900">{selectedGame.insights.threadingModel}</div>
             </div>
@@ -1746,23 +1864,44 @@ const SoCWatchAnalyzer = () => {
     };
 
     return (
-      <div className="bg-[#4fb39c] border-b-[4px] border-gray-900 px-6 py-3 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <Cpu className="w-8 h-8 text-gray-900" />
-          <h1 className="text-2xl font-black text-gray-900">Intel SoC Watch Analyzer</h1>
+      <div className="border-b-[4px] border-gray-900 px-6 py-3 flex items-center justify-between flex-shrink-0" style={{ backgroundColor: colors.headerBg }}>
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3">
+            <Cpu className="w-8 h-8" style={{ color: colors.headerText }} />
+            <h1 className="text-2xl font-black" style={{ color: colors.headerText }}>Intel SoC Watch Analyzer</h1>
+          </div>
+
+          {/* Color Palette Switcher */}
+          <div className="flex items-center gap-2 pl-6 border-l-[3px] border-gray-900">
+            <span className="text-sm font-bold" style={{ color: colors.headerText }}>Color:</span>
+            {Object.keys(colorPalettes).map((paletteKey) => {
+              const palette = colorPalettes[paletteKey];
+              return (
+                <button
+                  key={paletteKey}
+                  onClick={() => setCurrentPalette(paletteKey)}
+                  className={`w-10 h-10 rounded-[4px] border-[3px] border-gray-900 transition-all hover:-translate-y-[1px] ${
+                    currentPalette === paletteKey ? 'ring-4 ring-offset-2 ring-gray-900' : ''
+                  }`}
+                  style={{ backgroundColor: palette.headerBg }}
+                  title={palette.name}
+                />
+              );
+            })}
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
           {/* System message */}
           {comparisonMode && selectedGamesForComparison.length > 0 && (
-            <div className="px-4 py-2 bg-[#2563eb] border-[3px] border-gray-900 rounded-[4px] font-bold text-white text-sm">
+            <div className="px-4 py-2 border-[3px] border-gray-900 rounded-[4px] font-bold text-white text-sm" style={{ backgroundColor: colors.buttonPrimary }}>
               {selectedGamesForComparison.length}/{maxComparisons} game{selectedGamesForComparison.length > 1 ? 's' : ''} selected
             </div>
           )}
 
           {/* Upload buttons */}
           <label className="block">
-            <div className="flex items-center gap-2 px-4 py-2 bg-[#2563eb] border-[3px] border-gray-900 rounded-[4px] font-bold text-white cursor-pointer hover:-translate-x-[1px] hover:-translate-y-[1px] transition-all">
+            <div className="flex items-center gap-2 px-4 py-2 border-[3px] border-gray-900 rounded-[4px] font-bold text-white cursor-pointer hover:-translate-x-[1px] hover:-translate-y-[1px] transition-all" style={{ backgroundColor: colors.buttonPrimary }}>
               <Folder className="w-5 h-5" />
               Select Folder
             </div>
@@ -1778,7 +1917,7 @@ const SoCWatchAnalyzer = () => {
             />
           </label>
           <label className="block">
-            <div className="flex items-center gap-2 px-4 py-2 bg-[#8b3ecf] border-[3px] border-gray-900 rounded-[4px] font-bold text-white cursor-pointer hover:-translate-x-[1px] hover:-translate-y-[1px] transition-all">
+            <div className="flex items-center gap-2 px-4 py-2 border-[3px] border-gray-900 rounded-[4px] font-bold text-white cursor-pointer hover:-translate-x-[1px] hover:-translate-y-[1px] transition-all" style={{ backgroundColor: colors.buttonSecondary }}>
               <Upload className="w-5 h-5" />
               Select Files
             </div>
@@ -1799,8 +1938,8 @@ const SoCWatchAnalyzer = () => {
   // Footer
   const Footer = () => {
     return (
-      <div className="bg-[#4fb39c] border-t-[4px] border-gray-900 px-6 py-3 flex items-center justify-center flex-shrink-0">
-        <p className="text-sm font-bold text-gray-900">
+      <div className="border-t-[4px] border-gray-900 px-4 py-1 flex items-center justify-center flex-shrink-0" style={{ backgroundColor: colors.headerBg }}>
+        <p className="text-sm font-bold" style={{ color: colors.headerText }}>
           Developed by <span className="font-black">Shreyansh Tripathy & Satyajit Bhuyan</span> @ Intel SiV Gaming LAB - {year}
         </p>
       </div>
@@ -1808,7 +1947,7 @@ const SoCWatchAnalyzer = () => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#fffbeb] overflow-hidden absolute inset-0">
+    <div className="flex flex-col h-full w-full overflow-hidden absolute inset-0" style={{ backgroundColor: colors.background }}>
       <Header />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
