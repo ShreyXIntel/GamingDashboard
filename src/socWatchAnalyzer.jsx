@@ -51,11 +51,67 @@ const SoCWatchAnalyzer = () => {
   const [showArchived, setShowArchived] = useState(false);
   const [renamingSkuName, setRenamingSkuName] = useState(null);
   const [newSkuName, setNewSkuName] = useState('');
+  const [screenWidth, setScreenWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920);
+  const [userComparisonLimit, setUserComparisonLimit] = useState(null); // null = use auto, otherwise user preference
 
   const year = new Date().getFullYear();
 
+  // Calculate max comparisons based on screen width (absolute maximum that can fit)
+  const screenMaxComparisons = useMemo(() => {
+    // More conservative calculation for better readability
+    // Metric column takes ~160px, each comparison needs 230px (was 200), add more padding
+    const metricColumnWidth = 160;
+    const comparisonColumnWidth = 230;
+    const padding = 150;
+
+    const availableWidth = screenWidth - metricColumnWidth - padding;
+    const calculated = Math.floor(availableWidth / comparisonColumnWidth);
+
+    // Ensure minimum of 2 and maximum of 24 comparisons
+    return Math.max(2, Math.min(24, calculated));
+  }, [screenWidth]);
+
+  // Effective max comparisons (respects user preference if set)
+  const maxComparisons = userComparisonLimit !== null
+    ? Math.min(userComparisonLimit, screenMaxComparisons)
+    : Math.min(6, screenMaxComparisons); // Default to 6 or less if screen is small
+
   // Popup state
   const [popup, setPopup] = useState({ isOpen: false, title: '', message: '', type: 'info', onConfirm: null });
+
+  // Handle window resize to update max comparisons
+  useEffect(() => {
+    const handleResize = () => {
+      setScreenWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Auto-trim comparison selection if it exceeds new max after resize
+  useEffect(() => {
+    if (selectedGamesForComparison.length > maxComparisons) {
+      setSelectedGamesForComparison(selectedGamesForComparison.slice(0, maxComparisons));
+      if (userComparisonLimit === null) {
+        // Only show popup if it's due to screen resize, not user adjustment
+        setPopup({
+          isOpen: true,
+          title: 'Comparison Limit Adjusted',
+          message: `Screen size changed. Comparison limit reduced to ${maxComparisons} games. Some selections were removed.`,
+          type: 'info',
+          onConfirm: null
+        });
+      }
+    }
+  }, [maxComparisons]);
+
+  // Reset user preference if screen gets too small
+  useEffect(() => {
+    if (userComparisonLimit !== null && userComparisonLimit > screenMaxComparisons) {
+      setUserComparisonLimit(screenMaxComparisons);
+    }
+  }, [screenMaxComparisons]);
 
   // Load data from localStorage on mount
   useEffect(() => {
@@ -314,13 +370,13 @@ const SoCWatchAnalyzer = () => {
       setSelectedGamesForComparison(
         selectedGamesForComparison.filter((_, idx) => idx !== existingIndex)
       );
-    } else if (selectedGamesForComparison.length < 4) {
+    } else if (selectedGamesForComparison.length < maxComparisons) {
       setSelectedGamesForComparison([...selectedGamesForComparison, { game, skuName }]);
     } else {
       setPopup({
         isOpen: true,
         title: 'Selection Limit Reached',
-        message: 'Maximum 4 games can be compared at once. Please deselect a game first.',
+        message: `Maximum ${maxComparisons} games can be compared at once on your current screen size. Please deselect a game first or resize your window.`,
         type: 'warning',
         onConfirm: null
       });
@@ -512,9 +568,10 @@ const SoCWatchAnalyzer = () => {
               className={`w-full text-left px-3 py-2 rounded-[4px] border-[3px] border-gray-900 font-bold transition-all ${
                 comparisonMode ? 'bg-[#55d355] text-white' : 'bg-[#8b3ecf] text-white'
               } ${!hasMultipleFiles ? 'opacity-50 cursor-not-allowed' : ''}`}
+              title={`Compare up to ${maxComparisons} games`}
             >
               <TrendingUp className="w-4 h-4 inline mr-2" />
-              {comparisonMode ? `Compare (${selectedGamesForComparison.length})` : 'Compare Mode'}
+              {comparisonMode ? `Compare (${selectedGamesForComparison.length}/${maxComparisons})` : 'Compare Mode'}
             </button>
           </div>
         </div>
@@ -781,6 +838,43 @@ const SoCWatchAnalyzer = () => {
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-5xl font-black text-gray-900">Game Comparison</h1>
+
+          {/* Comparison Limit Controls */}
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-bold text-gray-700">Comparison Tiles:</span>
+            <button
+              onClick={() => {
+                const newLimit = Math.max(2, maxComparisons - 1);
+                setUserComparisonLimit(newLimit);
+              }}
+              disabled={maxComparisons <= 2}
+              className="px-3 py-1 bg-[#ef4444] border-[3px] border-gray-900 rounded-[4px] font-black text-white text-lg hover:-translate-y-[1px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Show fewer comparison tiles"
+            >
+              −
+            </button>
+            <span className="text-lg font-black text-gray-900 min-w-[80px] text-center">
+              {maxComparisons} / {screenMaxComparisons}
+            </span>
+            <button
+              onClick={() => {
+                const newLimit = Math.min(screenMaxComparisons, maxComparisons + 1);
+                setUserComparisonLimit(newLimit);
+              }}
+              disabled={maxComparisons >= screenMaxComparisons}
+              className="px-3 py-1 bg-[#55d355] border-[3px] border-gray-900 rounded-[4px] font-black text-white text-lg hover:-translate-y-[1px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Show more comparison tiles"
+            >
+              +
+            </button>
+            <button
+              onClick={() => setUserComparisonLimit(null)}
+              className="px-3 py-1 bg-[#2563eb] border-[3px] border-gray-900 rounded-[4px] font-bold text-white text-sm hover:-translate-y-[1px] transition-all"
+              title="Reset to default (6)"
+            >
+              Reset
+            </button>
+          </div>
         </div>
 
         {/* Side-by-side comparison table */}
@@ -1662,7 +1756,7 @@ const SoCWatchAnalyzer = () => {
           {/* System message */}
           {comparisonMode && selectedGamesForComparison.length > 0 && (
             <div className="px-4 py-2 bg-[#2563eb] border-[3px] border-gray-900 rounded-[4px] font-bold text-white text-sm">
-              {selectedGamesForComparison.length} game{selectedGamesForComparison.length > 1 ? 's' : ''} selected
+              {selectedGamesForComparison.length}/{maxComparisons} game{selectedGamesForComparison.length > 1 ? 's' : ''} selected
             </div>
           )}
 
