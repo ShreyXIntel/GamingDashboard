@@ -909,7 +909,7 @@ const SoCWatchAnalyzer = () => {
           {/* LEFT: CPU Architecture Heatmap - Arrow Lake Ultra 9 285K Layout */}
           <Cards className="p-6 bg-heatmap-card flex flex-col" style={{ height: '580px' }}>
             <h3 className="text-xl font-black mb-4 text-gray-900">CPU Architecture Heatmap</h3>
-            <div className="bg-heatmap-bg p-5 rounded-[4px] border-[3px] border-gray-900 flex-1 flex flex-col justify-between" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            <div className="bg-heatmap-bg p-5 rounded-[4px] border-[3px] border-gray-900 flex-1 flex flex-col justify-between text-poppins" style={{ fontFamily: 'Poppins, sans-serif' }}>
               <div className="flex gap-3 mx-auto w-full" style={{ maxWidth: '480px' }}>
                 {/* LEFT SIDE */}
                 <div className="flex-1 flex flex-col gap-1.5">
@@ -922,8 +922,8 @@ const SoCWatchAnalyzer = () => {
                         height: '72px'
                       }}
                     >
-                      <div className="text-base font-bold text-white">P{pCores[0].core}</div>
-                      <div className="text-xl font-black text-white">{pCores[0].active.toFixed(1)}%</div>
+                      <div className="text-base font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>P{pCores[0].core}</div>
+                      <div className="text-xl font-black text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>{pCores[0].active.toFixed(1)}%</div>
                     </div>
                   )}
 
@@ -938,8 +938,8 @@ const SoCWatchAnalyzer = () => {
                           height: '42px'
                         }}
                       >
-                        <div className="text-xs font-bold text-white">E{core.core}</div>
-                        <div className="text-sm font-black text-white">{core.active.toFixed(0)}%</div>
+                        <div className="text-xs font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>E{core.core}</div>
+                        <div className="text-sm font-black text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>{core.active.toFixed(0)}%</div>
                       </div>
                     ))}
                   </div>
@@ -953,8 +953,8 @@ const SoCWatchAnalyzer = () => {
                         height: '68px'
                       }}
                     >
-                      <div className="text-base font-bold text-white">P{pCores[1].core}</div>
-                      <div className="text-xl font-black text-white">{pCores[1].active.toFixed(1)}%</div>
+                      <div className="text-base font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>P{pCores[1].core}</div>
+                      <div className="text-xl font-black text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>{pCores[1].active.toFixed(1)}%</div>
                     </div>
                   )}
 
@@ -967,8 +967,8 @@ const SoCWatchAnalyzer = () => {
                         height: '68px'
                       }}
                     >
-                      <div className="text-base font-bold text-white">P{pCores[2].core}</div>
-                      <div className="text-xl font-black text-white">{pCores[2].active.toFixed(1)}%</div>
+                      <div className="text-base font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>P{pCores[2].core}</div>
+                      <div className="text-xl font-black text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>{pCores[2].active.toFixed(1)}%</div>
                     </div>
                   )}
 
@@ -983,8 +983,8 @@ const SoCWatchAnalyzer = () => {
                           height: '42px'
                         }}
                       >
-                        <div className="text-xs font-bold text-white">E{core.core}</div>
-                        <div className="text-sm font-black text-white">{core.active.toFixed(0)}%</div>
+                        <div className="text-xs font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>E{core.core}</div>
+                        <div className="text-sm font-black text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>{core.active.toFixed(0)}%</div>
                       </div>
                     ))}
                   </div>
@@ -998,8 +998,8 @@ const SoCWatchAnalyzer = () => {
                         height: '72px'
                       }}
                     >
-                      <div className="text-base font-bold text-white">P{pCores[3].core}</div>
-                      <div className="text-xl font-black text-white">{pCores[3].active.toFixed(1)}%</div>
+                      <div className="text-base font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>P{pCores[3].core}</div>
+                      <div className="text-xl font-black text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>{pCores[3].active.toFixed(1)}%</div>
                     </div>
                   )}
                 </div>
@@ -1022,8 +1022,8 @@ const SoCWatchAnalyzer = () => {
                         height: '72px'
                       }}
                     >
-                      <div className="text-base font-bold text-white">P{pCores[4].core}</div>
-                      <div className="text-xl font-black text-white">{pCores[4].active.toFixed(1)}%</div>
+                      <div className="text-base font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>P{pCores[4].core}</div>
+                      <div className="text-xl font-black text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>{pCores[4].active.toFixed(1)}%</div>
                     </div>
                   )}
 
@@ -1038,8 +1038,8 @@ const SoCWatchAnalyzer = () => {
                           height: '42px'
                         }}
                       >
-                        <div className="text-xs font-bold text-white">E{core.core}</div>
-                        <div className="text-sm font-black text-white">{core.active.toFixed(0)}%</div>
+                        <div className="text-xs font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>E{core.core}</div>
+                        <div className="text-sm font-black text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>{core.active.toFixed(0)}%</div>
                       </div>
                     ))}
                   </div>
@@ -1053,8 +1053,8 @@ const SoCWatchAnalyzer = () => {
                         height: '68px'
                       }}
                     >
-                      <div className="text-base font-bold text-white">P{pCores[5].core}</div>
-                      <div className="text-xl font-black text-white">{pCores[5].active.toFixed(1)}%</div>
+                      <div className="text-base font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>P{pCores[5].core}</div>
+                      <div className="text-xl font-black text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>{pCores[5].active.toFixed(1)}%</div>
                     </div>
                   )}
 
@@ -1067,8 +1067,8 @@ const SoCWatchAnalyzer = () => {
                         height: '68px'
                       }}
                     >
-                      <div className="text-base font-bold text-white">P{pCores[6].core}</div>
-                      <div className="text-xl font-black text-white">{pCores[6].active.toFixed(1)}%</div>
+                      <div className="text-base font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>P{pCores[6].core}</div>
+                      <div className="text-xl font-black text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>{pCores[6].active.toFixed(1)}%</div>
                     </div>
                   )}
 
@@ -1083,8 +1083,8 @@ const SoCWatchAnalyzer = () => {
                           height: '42px'
                         }}
                       >
-                        <div className="text-xs font-bold text-white">E{core.core}</div>
-                        <div className="text-sm font-black text-white">{core.active.toFixed(0)}%</div>
+                        <div className="text-xs font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>E{core.core}</div>
+                        <div className="text-sm font-black text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>{core.active.toFixed(0)}%</div>
                       </div>
                     ))}
                   </div>
@@ -1098,8 +1098,8 @@ const SoCWatchAnalyzer = () => {
                         height: '72px'
                       }}
                     >
-                      <div className="text-base font-bold text-white">P{pCores[7].core}</div>
-                      <div className="text-xl font-black text-white">{pCores[7].active.toFixed(1)}%</div>
+                      <div className="text-base font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>P{pCores[7].core}</div>
+                      <div className="text-xl font-black text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>{pCores[7].active.toFixed(1)}%</div>
                     </div>
                   )}
                 </div>
