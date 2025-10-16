@@ -1,10 +1,43 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, ScatterChart, Scatter } from 'recharts';
-import { Upload, X, TrendingUp, Cpu, Activity, Zap, ChevronRight, Folder, BarChart3, FileText, Trash2, Archive } from 'lucide-react';
+import { Upload, X, TrendingUp, Cpu, Activity, Zap, ChevronRight, Folder, BarChart3, FileText, Trash2, Archive, Edit2, Check } from 'lucide-react';
 import { Button } from './components/custom/buttons/button';
 import { Cards } from './components/custom/cards/cards';
 import { BtnBgShadow } from './components/custom/buttons/btn-bg-shadow';
 import { Popup } from './components/custom/popup/popup';
+
+// Memoized Chart Components for Performance
+const ActivityChart = memo(({ data }) => (
+  <ResponsiveContainer width="100%" height={250}>
+    <BarChart data={data}>
+      <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeWidth={1} />
+      <XAxis dataKey="core" stroke="#111827" strokeWidth={1} style={{ fontSize: '10px' }} />
+      <YAxis stroke="#111827" strokeWidth={1} style={{ fontSize: '10px' }} />
+      <Tooltip contentStyle={{ backgroundColor: '#fff', border: '2px solid #111827', borderRadius: '4px', fontSize: '11px' }} />
+      <Bar dataKey="active" name="Active %">
+        {data.map((entry, idx) => (
+          <Cell key={idx} fill={entry.type === 'P-Core' ? '#4338ca' : '#60a5fa'} />
+        ))}
+      </Bar>
+    </BarChart>
+  </ResponsiveContainer>
+));
+
+const FrequencyChart = memo(({ data }) => (
+  <ResponsiveContainer width="100%" height={250}>
+    <BarChart data={data}>
+      <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeWidth={1} />
+      <XAxis dataKey="core" stroke="#111827" strokeWidth={1} style={{ fontSize: '10px' }} />
+      <YAxis stroke="#111827" strokeWidth={1} style={{ fontSize: '10px' }} />
+      <Tooltip contentStyle={{ backgroundColor: '#fff', border: '2px solid #111827', borderRadius: '4px', fontSize: '11px' }} />
+      <Bar dataKey="freq" name="Frequency (MHz)">
+        {data.map((entry, idx) => (
+          <Cell key={idx} fill={entry.type === 'P-Core' ? '#4338ca' : '#60a5fa'} />
+        ))}
+      </Bar>
+    </BarChart>
+  </ResponsiveContainer>
+));
 
 const SoCWatchAnalyzer = () => {
   // State: SKUs contain directories, each directory contains multiple games
@@ -16,6 +49,8 @@ const SoCWatchAnalyzer = () => {
   const [selectedGamesForComparison, setSelectedGamesForComparison] = useState([]); // [{game, skuName}]
   const [isProcessing, setIsProcessing] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [renamingSkuName, setRenamingSkuName] = useState(null);
+  const [newSkuName, setNewSkuName] = useState('');
 
   const year = new Date().getFullYear();
 
@@ -366,6 +401,66 @@ const SoCWatchAnalyzer = () => {
     setSkus([...skus, { ...skuToUnarchive, isArchived: false }]);
   };
 
+  // Start renaming a SKU
+  const startRenamingSku = (skuName) => {
+    setRenamingSkuName(skuName);
+    setNewSkuName(skuName);
+  };
+
+  // Cancel renaming
+  const cancelRenamingSku = () => {
+    setRenamingSkuName(null);
+    setNewSkuName('');
+  };
+
+  // Confirm rename SKU
+  const confirmRenameSku = (oldSkuName) => {
+    const trimmedName = newSkuName.trim();
+
+    // Validate new name
+    if (!trimmedName) {
+      setPopup({
+        isOpen: true,
+        title: 'Invalid Name',
+        message: 'SKU name cannot be empty.',
+        type: 'error',
+        onConfirm: null
+      });
+      return;
+    }
+
+    // Check if name already exists
+    if (trimmedName !== oldSkuName && skus.some(sku => sku.name === trimmedName)) {
+      setPopup({
+        isOpen: true,
+        title: 'Duplicate Name',
+        message: 'A SKU with this name already exists.',
+        type: 'error',
+        onConfirm: null
+      });
+      return;
+    }
+
+    // Update SKU name
+    setSkus(skus.map(sku => sku.name === oldSkuName ? { ...sku, name: trimmedName } : sku));
+
+    // Update selected game if it's from this SKU
+    if (selectedGame && selectedGame.skuName === oldSkuName) {
+      setSelectedGame({ ...selectedGame, skuName: trimmedName });
+    }
+
+    // Update comparison games if any are from this SKU
+    setSelectedGamesForComparison(
+      selectedGamesForComparison.map(item =>
+        item.skuName === oldSkuName ? { ...item, skuName: trimmedName } : item
+      )
+    );
+
+    // Clear renaming state
+    setRenamingSkuName(null);
+    setNewSkuName('');
+  };
+
   // Sidebar with game tabs grouped by SKU/folder
   const Sidebar = () => {
     const totalFiles = skus.reduce((sum, sku) => sum + sku.games.length, 0);
@@ -488,32 +583,82 @@ const SoCWatchAnalyzer = () => {
             <div className="space-y-3">
               {skus.map((sku) => (
                 <div key={sku.name} className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-black text-gray-900 uppercase flex items-center gap-1">
-                      <Folder className="w-3 h-3" />
-                      {sku.name}
-                    </h3>
+                  <div className="flex items-center justify-between gap-2">
+                    {renamingSkuName === sku.name ? (
+                      // Rename mode
+                      <div className="flex items-center gap-1 flex-1">
+                        <Folder className="w-3 h-3 text-gray-900" />
+                        <input
+                          type="text"
+                          value={newSkuName}
+                          onChange={(e) => setNewSkuName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') confirmRenameSku(sku.name);
+                            if (e.key === 'Escape') cancelRenamingSku();
+                          }}
+                          className="flex-1 text-xs font-black text-gray-900 uppercase border-[2px] border-gray-900 rounded-[2px] px-1 py-0.5"
+                          autoFocus
+                        />
+                      </div>
+                    ) : (
+                      // Display mode
+                      <h3 className="text-sm font-black text-gray-900 uppercase flex items-center gap-1 flex-1">
+                        <Folder className="w-3 h-3" />
+                        {sku.name}
+                      </h3>
+                    )}
                     <div className="flex gap-1">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          archiveSku(sku.name);
-                        }}
-                        className="p-1 bg-[#99a75d] border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
-                        title="Archive"
-                      >
-                        <Archive className="w-3 h-3 text-white" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeSku(sku.name);
-                        }}
-                        className="p-1 bg-[#d00000] border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
-                        title="Remove Directory"
-                      >
-                        <Trash2 className="w-3 h-3 text-white" />
-                      </button>
+                      {renamingSkuName === sku.name ? (
+                        <>
+                          <button
+                            onClick={() => confirmRenameSku(sku.name)}
+                            className="p-1 bg-[#55d355] border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
+                            title="Confirm Rename"
+                          >
+                            <Check className="w-3 h-3 text-white" />
+                          </button>
+                          <button
+                            onClick={cancelRenamingSku}
+                            className="p-1 bg-[#f59e0b] border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
+                            title="Cancel"
+                          >
+                            <X className="w-3 h-3 text-white" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startRenamingSku(sku.name);
+                            }}
+                            className="p-1 bg-[#2563eb] border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
+                            title="Rename"
+                          >
+                            <Edit2 className="w-3 h-3 text-white" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              archiveSku(sku.name);
+                            }}
+                            className="p-1 bg-[#99a75d] border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
+                            title="Archive"
+                          >
+                            <Archive className="w-3 h-3 text-white" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeSku(sku.name);
+                            }}
+                            className="p-1 bg-[#d00000] border-[2px] border-gray-900 rounded-[2px] hover:-translate-y-[1px] transition-all"
+                            title="Remove Directory"
+                          >
+                            <Trash2 className="w-3 h-3 text-white" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className="space-y-1 pl-1">
@@ -595,6 +740,31 @@ const SoCWatchAnalyzer = () => {
 
   // Comparison View
   const ComparisonView = () => {
+    const [expandedComparisonRows, setExpandedComparisonRows] = useState({});
+    const [showChartsFor, setShowChartsFor] = useState({});
+
+    const toggleComparisonRowExpansion = (gameIndex) => {
+      setExpandedComparisonRows(prev => ({
+        ...prev,
+        [gameIndex]: !prev[gameIndex]
+      }));
+    };
+
+    const toggleChartsVisibility = (gameIndex) => {
+      setShowChartsFor(prev => ({
+        ...prev,
+        [gameIndex]: !prev[gameIndex]
+      }));
+    };
+
+    // Color gradient for heatmap (same as in FocusedView)
+    const getActivityColor = (percentage) => {
+      const r = Math.round(147 - percentage * 0.81); // 147 to 30
+      const g = Math.round(197 - percentage * 1.16); // 197 to 81
+      const b = Math.round(253 - percentage * 0.51); // 253 to 202
+      return `rgb(${r}, ${g}, ${b})`;
+    };
+
     if (selectedGamesForComparison.length === 0) {
       return (
         <div className="p-6">
@@ -619,22 +789,24 @@ const SoCWatchAnalyzer = () => {
             <table className="w-full border-[3px] border-gray-900">
               <thead>
                 <tr className="bg-[#4fb39c]">
-                  <th className="border-[3px] border-gray-900 px-4 py-3 text-left font-black text-gray-900 sticky left-0 bg-[#4fb39c]">Metric</th>
+                  <th className="border-[3px] border-gray-900 px-3 py-3 text-left font-black text-gray-900 sticky left-0 bg-[#4fb39c] w-40">Metric</th>
                   {selectedGamesForComparison.map((item, idx) => (
-                    <th key={idx} className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-gray-900 min-w-[180px]">
-                      <div className="truncate">{item.game.name}</div>
-                      <div className="text-xs font-bold text-gray-700 mt-1">{item.skuName}</div>
+                    <th key={idx} className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-gray-900 min-w-[200px]">
+                      <div className="flex flex-col items-center justify-center gap-1">
+                        <div className="text-base leading-tight max-w-full break-words">{item.game.name}</div>
+                        <div className="text-sm font-bold text-gray-700">{item.skuName}</div>
+                      </div>
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td className="border-[3px] border-gray-900 px-4 py-3 font-black text-gray-900 sticky left-0 bg-white">P-Core Activity %</td>
+                  <td className="border-[3px] border-gray-900 px-3 py-3 font-black text-gray-900 sticky left-0 bg-white text-sm">P-Core C0 %</td>
                   {selectedGamesForComparison.map((item, idx) => (
                     <td
                       key={idx}
-                      className="border-[3px] border-gray-900 px-4 py-3 text-center font-black"
+                      className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-base"
                       style={{
                         backgroundColor: getHeatmapColorForRatio(parseFloat(item.game.insights.threadingRatio)),
                         color: '#111827'
@@ -645,11 +817,11 @@ const SoCWatchAnalyzer = () => {
                   ))}
                 </tr>
                 <tr>
-                  <td className="border-[3px] border-gray-900 px-4 py-3 font-black text-gray-900 sticky left-0 bg-white">E-Core Activity %</td>
+                  <td className="border-[3px] border-gray-900 px-3 py-3 font-black text-gray-900 sticky left-0 bg-white text-sm">E-Core C0 %</td>
                   {selectedGamesForComparison.map((item, idx) => (
                     <td
                       key={idx}
-                      className="border-[3px] border-gray-900 px-4 py-3 text-center font-black"
+                      className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-base"
                       style={{
                         backgroundColor: getHeatmapColorForRatio(parseFloat(item.game.insights.threadingRatio)),
                         color: '#111827'
@@ -660,11 +832,11 @@ const SoCWatchAnalyzer = () => {
                   ))}
                 </tr>
                 <tr>
-                  <td className="border-[3px] border-gray-900 px-4 py-3 font-black text-gray-900 sticky left-0 bg-white">P/E Ratio</td>
+                  <td className="border-[3px] border-gray-900 px-3 py-3 font-black text-gray-900 sticky left-0 bg-white text-sm">P/E Ratio</td>
                   {selectedGamesForComparison.map((item, idx) => (
                     <td
                       key={idx}
-                      className="border-[3px] border-gray-900 px-4 py-3 text-center font-black"
+                      className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-base"
                       style={{
                         backgroundColor: getHeatmapColorForRatio(parseFloat(item.game.insights.threadingRatio)),
                         color: '#111827'
@@ -675,41 +847,41 @@ const SoCWatchAnalyzer = () => {
                   ))}
                 </tr>
                 <tr>
-                  <td className="border-[3px] border-gray-900 px-4 py-3 font-black text-gray-900 sticky left-0 bg-white">Threading Model</td>
+                  <td className="border-[3px] border-gray-900 px-3 py-3 font-black text-gray-900 sticky left-0 bg-white text-sm">Threading Model</td>
                   {selectedGamesForComparison.map((item, idx) => (
-                    <td key={idx} className="border-[3px] border-gray-900 px-4 py-3 text-center font-bold text-gray-900">
+                    <td key={idx} className="border-[3px] border-gray-900 px-4 py-3 text-center font-bold text-gray-900 text-sm">
                       {item.game.insights.threadingModel}
                     </td>
                   ))}
                 </tr>
                 <tr>
-                  <td className="border-[3px] border-gray-900 px-4 py-3 font-black text-gray-900 sticky left-0 bg-white">P-Core Avg Freq (MHz)</td>
+                  <td className="border-[3px] border-gray-900 px-3 py-3 font-black text-gray-900 sticky left-0 bg-white text-sm">P-Core Avg Freq (MHz)</td>
                   {selectedGamesForComparison.map((item, idx) => (
-                    <td key={idx} className="border-[3px] border-gray-900 px-4 py-3 text-center font-bold text-gray-900">
+                    <td key={idx} className="border-[3px] border-gray-900 px-4 py-3 text-center font-bold text-gray-900 text-sm">
                       {item.game.insights.pCoreAvgFreq}
                     </td>
                   ))}
                 </tr>
                 <tr>
-                  <td className="border-[3px] border-gray-900 px-4 py-3 font-black text-gray-900 sticky left-0 bg-white">E-Core Avg Freq (MHz)</td>
+                  <td className="border-[3px] border-gray-900 px-3 py-3 font-black text-gray-900 sticky left-0 bg-white text-sm">E-Core Avg Freq (MHz)</td>
                   {selectedGamesForComparison.map((item, idx) => (
-                    <td key={idx} className="border-[3px] border-gray-900 px-4 py-3 text-center font-bold text-gray-900">
+                    <td key={idx} className="border-[3px] border-gray-900 px-4 py-3 text-center font-bold text-gray-900 text-sm">
                       {item.game.insights.eCoreAvgFreq}
                     </td>
                   ))}
                 </tr>
                 <tr>
-                  <td className="border-[3px] border-gray-900 px-4 py-3 font-black text-gray-900 sticky left-0 bg-white">Total Cores</td>
+                  <td className="border-[3px] border-gray-900 px-3 py-3 font-black text-gray-900 sticky left-0 bg-white text-sm">Total Cores</td>
                   {selectedGamesForComparison.map((item, idx) => (
-                    <td key={idx} className="border-[3px] border-gray-900 px-4 py-3 text-center font-bold text-gray-900">
+                    <td key={idx} className="border-[3px] border-gray-900 px-4 py-3 text-center font-bold text-gray-900 text-sm">
                       {item.game.metadata.totalCores}
                     </td>
                   ))}
                 </tr>
                 <tr>
-                  <td className="border-[3px] border-gray-900 px-4 py-3 font-black text-gray-900 sticky left-0 bg-white">Duration (s)</td>
+                  <td className="border-[3px] border-gray-900 px-3 py-3 font-black text-gray-900 sticky left-0 bg-white text-sm">Duration (s)</td>
                   {selectedGamesForComparison.map((item, idx) => (
-                    <td key={idx} className="border-[3px] border-gray-900 px-4 py-3 text-center font-bold text-gray-900">
+                    <td key={idx} className="border-[3px] border-gray-900 px-4 py-3 text-center font-bold text-gray-900 text-sm">
                       {item.game.metadata.duration}
                     </td>
                   ))}
@@ -733,12 +905,262 @@ const SoCWatchAnalyzer = () => {
             </div>
           </div>
         </Cards>
+
+        {/* Focused Analysis for Each Game */}
+        {selectedGamesForComparison.map((item, gameIdx) => {
+          const game = item.game;
+          const pCores = game.cStateData.filter(c => c.type === 'P-Core');
+          const eCores = game.cStateData.filter(c => c.type === 'E-Core');
+          const isExpanded = expandedComparisonRows[gameIdx];
+          const showCharts = showChartsFor[gameIdx];
+
+          return (
+            <Cards key={gameIdx} className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-3xl font-black text-gray-900">{game.name}</h2>
+                  <p className="text-sm font-bold text-gray-700 mt-1">
+                    SKU: {item.skuName} | Cores: {game.metadata.totalCores} | Duration: {game.metadata.duration}s
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => toggleComparisonRowExpansion(gameIdx)}
+                    className="px-4 py-2 bg-[#2563eb] border-[3px] border-gray-900 rounded-[4px] font-bold text-white hover:-translate-y-[1px] transition-all"
+                  >
+                    {isExpanded ? 'Hide Core Stats' : 'Show Core Stats'}
+                  </button>
+                  <button
+                    onClick={() => toggleChartsVisibility(gameIdx)}
+                    className="px-4 py-2 bg-[#8b3ecf] border-[3px] border-gray-900 rounded-[4px] font-bold text-white hover:-translate-y-[1px] transition-all"
+                  >
+                    {showCharts ? 'Hide Charts' : 'Show Charts'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Individual Core Stats (Expandable) */}
+              {isExpanded && (
+                <div className="mb-6 p-4 bg-[#f3f4f6] border-[3px] border-gray-900 rounded-[4px]">
+                  <div className="grid grid-cols-2 gap-6">
+                    {/* P-Cores */}
+                    <div>
+                      <h4 className="text-base font-black mb-2 text-gray-900">P-Core Individual Stats</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {pCores.map(core => (
+                          <div key={core.core} className="inline-flex items-center gap-2 bg-white border-[2px] border-gray-900 rounded-[4px] px-2 py-1">
+                            <span className="font-bold text-gray-900 text-xs">P{core.core}</span>
+                            <div className="flex flex-col items-end">
+                              <span className="font-black text-[#2563eb] text-xs">C0: {core.active.toFixed(1)}%</span>
+                              <span className="font-bold text-[#4338ca] text-[10px]">P0: {(core.freq || 0).toFixed(0)} MHz</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* E-Cores */}
+                    <div>
+                      <h4 className="text-base font-black mb-2 text-gray-900">E-Core Individual Stats</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {eCores.map(core => (
+                          <div key={core.core} className="inline-flex items-center gap-2 bg-white border-[2px] border-gray-900 rounded-[4px] px-2 py-1">
+                            <span className="font-bold text-gray-900 text-xs">E{core.core}</span>
+                            <div className="flex flex-col items-end">
+                              <span className="font-black text-[#60a5fa] text-xs">C0: {core.active.toFixed(1)}%</span>
+                              <span className="font-bold text-[#3b82f6] text-[10px]">P0: {(core.freq || 0).toFixed(0)} MHz</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Heatmap, Activity Chart, and Frequency Chart */}
+              {showCharts && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Heatmap - Compact Version */}
+                  <div className="bg-heatmap-card p-4 border-[3px] border-gray-900 rounded-[4px]">
+                    <h3 className="text-lg font-black mb-3 text-gray-900">CPU Heatmap</h3>
+                    <div className="bg-heatmap-bg p-3 rounded-[4px] border-[2px] border-gray-900">
+                      <div className="flex gap-2 items-stretch justify-center">
+                        {/* Left Side - Compact */}
+                        <div className="flex flex-col gap-1.5 w-[70px]">
+                          {/* P0 */}
+                          {pCores[0] && (
+                            <div
+                              className="border-[2px] border-white rounded-[3px] flex flex-col items-center justify-center"
+                              style={{ backgroundColor: getActivityColor(pCores[0].active), minHeight: '36px' }}
+                            >
+                              <div className="text-[10px] font-black text-white">P{pCores[0].core}</div>
+                              <div className="text-xs font-black text-white">{pCores[0].active.toFixed(0)}%</div>
+                            </div>
+                          )}
+                          {/* E0-E3 */}
+                          <div className="grid grid-cols-2 gap-1 border-[2px] border-white rounded-[3px] p-1.5 bg-[#1e40af]/20">
+                            {eCores.slice(0, 4).map((core) => (
+                              <div
+                                key={core.core}
+                                className="border-[1px] border-white rounded-[2px] flex items-center justify-center"
+                                style={{ backgroundColor: getActivityColor(core.active), minHeight: '22px' }}
+                              >
+                                <div className="text-[9px] font-black text-white">{core.active.toFixed(0)}%</div>
+                              </div>
+                            ))}
+                          </div>
+                          {/* P1 */}
+                          {pCores[1] && (
+                            <div
+                              className="border-[2px] border-white rounded-[3px] flex flex-col items-center justify-center"
+                              style={{ backgroundColor: getActivityColor(pCores[1].active), minHeight: '34px' }}
+                            >
+                              <div className="text-[10px] font-black text-white">P{pCores[1].core}</div>
+                              <div className="text-xs font-black text-white">{pCores[1].active.toFixed(0)}%</div>
+                            </div>
+                          )}
+                          {/* P2 */}
+                          {pCores[2] && (
+                            <div
+                              className="border-[2px] border-white rounded-[3px] flex flex-col items-center justify-center"
+                              style={{ backgroundColor: getActivityColor(pCores[2].active), minHeight: '34px' }}
+                            >
+                              <div className="text-[10px] font-black text-white">P{pCores[2].core}</div>
+                              <div className="text-xs font-black text-white">{pCores[2].active.toFixed(0)}%</div>
+                            </div>
+                          )}
+                          {/* E8-E11 */}
+                          <div className="grid grid-cols-2 gap-1 border-[2px] border-white rounded-[3px] p-1.5 bg-[#1e40af]/20">
+                            {eCores.slice(8, 12).map((core) => (
+                              <div
+                                key={core.core}
+                                className="border-[1px] border-white rounded-[2px] flex items-center justify-center"
+                                style={{ backgroundColor: getActivityColor(core.active), minHeight: '22px' }}
+                              >
+                                <div className="text-[9px] font-black text-white">{core.active.toFixed(0)}%</div>
+                              </div>
+                            ))}
+                          </div>
+                          {/* P3 */}
+                          {pCores[3] && (
+                            <div
+                              className="border-[2px] border-white rounded-[3px] flex flex-col items-center justify-center"
+                              style={{ backgroundColor: getActivityColor(pCores[3].active), minHeight: '36px' }}
+                            >
+                              <div className="text-[10px] font-black text-white">P{pCores[3].core}</div>
+                              <div className="text-xs font-black text-white">{pCores[3].active.toFixed(0)}%</div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Center Ring */}
+                        <div className="w-5 flex items-center justify-center">
+                          <div className="w-full h-full bg-gradient-to-b from-[#60a5fa] via-[#3b82f6] to-[#60a5fa] border-[1px] border-white/30 rounded-[2px]"></div>
+                        </div>
+
+                        {/* Right Side - Mirror */}
+                        <div className="flex flex-col gap-1.5 w-[70px]">
+                          {/* P4 */}
+                          {pCores[4] && (
+                            <div
+                              className="border-[2px] border-white rounded-[3px] flex flex-col items-center justify-center"
+                              style={{ backgroundColor: getActivityColor(pCores[4].active), minHeight: '36px' }}
+                            >
+                              <div className="text-[10px] font-black text-white">P{pCores[4].core}</div>
+                              <div className="text-xs font-black text-white">{pCores[4].active.toFixed(0)}%</div>
+                            </div>
+                          )}
+                          {/* E4-E7 */}
+                          <div className="grid grid-cols-2 gap-1 border-[2px] border-white rounded-[3px] p-1.5 bg-[#1e40af]/20">
+                            {eCores.slice(4, 8).map((core) => (
+                              <div
+                                key={core.core}
+                                className="border-[1px] border-white rounded-[2px] flex items-center justify-center"
+                                style={{ backgroundColor: getActivityColor(core.active), minHeight: '22px' }}
+                              >
+                                <div className="text-[9px] font-black text-white">{core.active.toFixed(0)}%</div>
+                              </div>
+                            ))}
+                          </div>
+                          {/* P5 */}
+                          {pCores[5] && (
+                            <div
+                              className="border-[2px] border-white rounded-[3px] flex flex-col items-center justify-center"
+                              style={{ backgroundColor: getActivityColor(pCores[5].active), minHeight: '34px' }}
+                            >
+                              <div className="text-[10px] font-black text-white">P{pCores[5].core}</div>
+                              <div className="text-xs font-black text-white">{pCores[5].active.toFixed(0)}%</div>
+                            </div>
+                          )}
+                          {/* P6 */}
+                          {pCores[6] && (
+                            <div
+                              className="border-[2px] border-white rounded-[3px] flex flex-col items-center justify-center"
+                              style={{ backgroundColor: getActivityColor(pCores[6].active), minHeight: '34px' }}
+                            >
+                              <div className="text-[10px] font-black text-white">P{pCores[6].core}</div>
+                              <div className="text-xs font-black text-white">{pCores[6].active.toFixed(0)}%</div>
+                            </div>
+                          )}
+                          {/* E12-E15 */}
+                          <div className="grid grid-cols-2 gap-1 border-[2px] border-white rounded-[3px] p-1.5 bg-[#1e40af]/20">
+                            {eCores.slice(12, 16).map((core) => (
+                              <div
+                                key={core.core}
+                                className="border-[1px] border-white rounded-[2px] flex items-center justify-center"
+                                style={{ backgroundColor: getActivityColor(core.active), minHeight: '22px' }}
+                              >
+                                <div className="text-[9px] font-black text-white">{core.active.toFixed(0)}%</div>
+                              </div>
+                            ))}
+                          </div>
+                          {/* P7 */}
+                          {pCores[7] && (
+                            <div
+                              className="border-[2px] border-white rounded-[3px] flex flex-col items-center justify-center"
+                              style={{ backgroundColor: getActivityColor(pCores[7].active), minHeight: '36px' }}
+                            >
+                              <div className="text-[10px] font-black text-white">P{pCores[7].core}</div>
+                              <div className="text-xs font-black text-white">{pCores[7].active.toFixed(0)}%</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Activity Chart */}
+                  <div className="bg-white p-4 border-[3px] border-gray-900 rounded-[4px]">
+                    <h3 className="text-lg font-black mb-3 text-gray-900">Activity Distribution</h3>
+                    <ActivityChart data={game.cStateData} />
+                  </div>
+
+                  {/* Frequency Chart */}
+                  <div className="bg-white p-4 border-[3px] border-gray-900 rounded-[4px]">
+                    <h3 className="text-lg font-black mb-3 text-gray-900">Frequency Distribution</h3>
+                    <FrequencyChart data={game.cStateData} />
+                  </div>
+                </div>
+              )}
+            </Cards>
+          );
+        })}
       </div>
     );
   };
 
   // Overall Threading Behavior View (with heatmap table)
   const OverallView = () => {
+    const [expandedRows, setExpandedRows] = useState({});
+
+    const toggleRowExpansion = (skuName, gameIndex) => {
+      const key = `${skuName}-${gameIndex}`;
+      setExpandedRows(prev => ({
+        ...prev,
+        [key]: !prev[key]
+      }));
+    };
+
     return (
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
@@ -763,63 +1185,122 @@ const SoCWatchAnalyzer = () => {
                   <thead>
                     <tr className="bg-[#4fb39c]">
                       <th className="border-[3px] border-gray-900 px-4 py-3 text-left font-black text-gray-900">Game</th>
-                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-gray-900">P-Core Activity %</th>
-                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-gray-900">E-Core Activity %</th>
-                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-gray-900">CC6 %</th>
-                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-gray-900">CC7 %</th>
+                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-gray-900">P-Core C0 %</th>
+                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-gray-900">E-Core C0 %</th>
+                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-gray-900">P-Core P0 (MHz)</th>
+                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-gray-900">E-Core P0 (MHz)</th>
                       <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-gray-900">P/E Ratio</th>
                       <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-gray-900">Model</th>
+                      <th className="border-[3px] border-gray-900 px-4 py-3 text-center font-black text-gray-900">Details</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {sku.games.map((game, idx) => (
-                      <tr
-                        key={idx}
-                        className="hover:bg-[#899bdd] transition-colors cursor-pointer"
-                        onClick={() => {
-                          setSelectedGame({ ...game, skuName: sku.name });
-                          setActiveView('focused');
-                        }}
-                      >
-                        <td className="border-[3px] border-gray-900 px-4 py-3 font-bold text-gray-900">{game.name}</td>
-                        <td
-                          className="border-[3px] border-gray-900 px-4 py-3 text-center font-black"
-                          style={{
-                            backgroundColor: getHeatmapColorForRatio(parseFloat(game.insights.threadingRatio)),
-                            color: '#111827'
-                          }}
-                        >
-                          {game.insights.pCoreActivity}
-                        </td>
-                        <td
-                          className="border-[3px] border-gray-900 px-4 py-3 text-center font-black"
-                          style={{
-                            backgroundColor: getHeatmapColorForRatio(parseFloat(game.insights.threadingRatio)),
-                            color: '#111827'
-                          }}
-                        >
-                          {game.insights.eCoreActivity}
-                        </td>
-                        <td className="border-[3px] border-gray-900 px-4 py-3 text-center font-bold text-gray-900 bg-[#a5b4fc]">
-                          {game.insights.avgCC6}
-                        </td>
-                        <td className="border-[3px] border-gray-900 px-4 py-3 text-center font-bold text-gray-900 bg-[#c7d2fe]">
-                          {game.insights.avgCC7}
-                        </td>
-                        <td
-                          className="border-[3px] border-gray-900 px-4 py-3 text-center font-black"
-                          style={{
-                            backgroundColor: getHeatmapColorForRatio(parseFloat(game.insights.threadingRatio)),
-                            color: '#111827'
-                          }}
-                        >
-                          {game.insights.threadingRatio}
-                        </td>
-                        <td className="border-[3px] border-gray-900 px-4 py-3 text-center font-bold text-gray-900">
-                          {game.insights.threadingModel}
-                        </td>
-                      </tr>
-                    ))}
+                    {sku.games.map((game, idx) => {
+                      const isExpanded = expandedRows[`${sku.name}-${idx}`];
+                      const pCores = game.cStateData.filter(c => c.type === 'P-Core');
+                      const eCores = game.cStateData.filter(c => c.type === 'E-Core');
+
+                      return (
+                        <React.Fragment key={idx}>
+                          <tr className="hover:bg-[#899bdd] transition-colors">
+                            <td
+                              className="border-[3px] border-gray-900 px-4 py-3 font-bold text-gray-900 cursor-pointer"
+                              onClick={() => {
+                                setSelectedGame({ ...game, skuName: sku.name });
+                                setActiveView('focused');
+                              }}
+                            >
+                              {game.name}
+                            </td>
+                            <td
+                              className="border-[3px] border-gray-900 px-4 py-3 text-center font-black"
+                              style={{
+                                backgroundColor: getHeatmapColorForRatio(parseFloat(game.insights.threadingRatio)),
+                                color: '#111827'
+                              }}
+                            >
+                              {game.insights.pCoreActivity}
+                            </td>
+                            <td
+                              className="border-[3px] border-gray-900 px-4 py-3 text-center font-black"
+                              style={{
+                                backgroundColor: getHeatmapColorForRatio(parseFloat(game.insights.threadingRatio)),
+                                color: '#111827'
+                              }}
+                            >
+                              {game.insights.eCoreActivity}
+                            </td>
+                            <td className="border-[3px] border-gray-900 px-4 py-3 text-center font-bold text-gray-900 bg-[#e0e7ff]">
+                              {game.insights.pCoreAvgFreq}
+                            </td>
+                            <td className="border-[3px] border-gray-900 px-4 py-3 text-center font-bold text-gray-900 bg-[#dbeafe]">
+                              {game.insights.eCoreAvgFreq}
+                            </td>
+                            <td
+                              className="border-[3px] border-gray-900 px-4 py-3 text-center font-black"
+                              style={{
+                                backgroundColor: getHeatmapColorForRatio(parseFloat(game.insights.threadingRatio)),
+                                color: '#111827'
+                              }}
+                            >
+                              {game.insights.threadingRatio}
+                            </td>
+                            <td className="border-[3px] border-gray-900 px-4 py-3 text-center font-bold text-gray-900">
+                              {game.insights.threadingModel}
+                            </td>
+                            <td className="border-[3px] border-gray-900 px-4 py-3 text-center">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleRowExpansion(sku.name, idx);
+                                }}
+                                className="px-3 py-1 bg-[#2563eb] border-[2px] border-gray-900 rounded-[4px] font-bold text-white text-sm hover:-translate-y-[1px] transition-all"
+                              >
+                                {isExpanded ? 'Hide' : 'View'}
+                              </button>
+                            </td>
+                          </tr>
+                          {isExpanded && (
+                            <tr>
+                              <td colSpan="8" className="border-[3px] border-gray-900 bg-[#f3f4f6] px-6 py-4">
+                                <div className="grid grid-cols-2 gap-6">
+                                  {/* P-Cores */}
+                                  <div>
+                                    <h4 className="text-base font-black mb-2 text-gray-900">P-Core Individual Stats</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                      {pCores.map(core => (
+                                        <div key={core.core} className="inline-flex items-center gap-2 bg-white border-[2px] border-gray-900 rounded-[4px] px-2 py-1">
+                                          <span className="font-bold text-gray-900 text-xs">P{core.core}</span>
+                                          <div className="flex flex-col items-end">
+                                            <span className="font-black text-[#2563eb] text-xs">C0: {core.active.toFixed(1)}%</span>
+                                            <span className="font-bold text-[#4338ca] text-[10px]">P0: {(core.freq || 0).toFixed(0)} MHz</span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  {/* E-Cores */}
+                                  <div>
+                                    <h4 className="text-base font-black mb-2 text-gray-900">E-Core Individual Stats</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                      {eCores.map(core => (
+                                        <div key={core.core} className="inline-flex items-center gap-2 bg-white border-[2px] border-gray-900 rounded-[4px] px-2 py-1">
+                                          <span className="font-bold text-gray-900 text-xs">E{core.core}</span>
+                                          <div className="flex flex-col items-end">
+                                            <span className="font-black text-[#60a5fa] text-xs">C0: {core.active.toFixed(1)}%</span>
+                                            <span className="font-bold text-[#3b82f6] text-[10px]">P0: {(core.freq || 0).toFixed(0)} MHz</span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -859,8 +1340,8 @@ const SoCWatchAnalyzer = () => {
       );
     }
 
-    const pCores = selectedGame.cStateData.filter(c => c.type === 'P-Core');
-    const eCores = selectedGame.cStateData.filter(c => c.type === 'E-Core');
+    const pCores = useMemo(() => selectedGame.cStateData.filter(c => c.type === 'P-Core'), [selectedGame]);
+    const eCores = useMemo(() => selectedGame.cStateData.filter(c => c.type === 'E-Core'), [selectedGame]);
 
     // Color gradient: Light blue (96a5fd) at 0% to Dark blue (1e3a8a) at 100%
     const getActivityColor = (percentage) => {
@@ -1128,39 +1609,13 @@ const SoCWatchAnalyzer = () => {
             {/* Core Activity Distribution */}
             <Cards className="p-6">
               <h3 className="text-lg font-bold mb-3 text-gray-900">Core Activity Distribution</h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={selectedGame.cStateData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#111827" strokeWidth={2} />
-                  <XAxis dataKey="core" stroke="#111827" strokeWidth={2} />
-                  <YAxis stroke="#111827" strokeWidth={2} />
-                  <Tooltip contentStyle={{ backgroundColor: '#fff', border: '3px solid #111827', borderRadius: '4px' }} />
-                  <Legend />
-                  <Bar dataKey="active" name="Active %" stroke="#111827" strokeWidth={2}>
-                    {selectedGame.cStateData.map((entry, idx) => (
-                      <Cell key={idx} fill={entry.type === 'P-Core' ? '#4338ca' : '#60a5fa'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <ActivityChart data={selectedGame.cStateData} />
             </Cards>
 
             {/* Frequency by Core */}
             <Cards className="p-6">
               <h3 className="text-lg font-bold mb-3 text-gray-900">Frequency by Core</h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={selectedGame.cStateData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#111827" strokeWidth={2} />
-                  <XAxis dataKey="core" stroke="#111827" strokeWidth={2} />
-                  <YAxis stroke="#111827" strokeWidth={2} />
-                  <Tooltip contentStyle={{ backgroundColor: '#fff', border: '3px solid #111827', borderRadius: '4px' }} />
-                  <Legend />
-                  <Bar dataKey="freq" name="Frequency (MHz)" stroke="#111827" strokeWidth={2}>
-                    {selectedGame.cStateData.map((entry, idx) => (
-                      <Cell key={idx} fill={entry.type === 'P-Core' ? '#4338ca' : '#60a5fa'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <FrequencyChart data={selectedGame.cStateData} />
             </Cards>
           </div>
         </div>
