@@ -1,14 +1,13 @@
-import './App.css'
-import SoCWatchAnalyzer from './socWatchAnalyzer'
+import "./App.css";
+import SoCWatchAnalyzer from "./socWatchAnalyzer";
 
 function App() {
 
-
   return (
     <>
-      <SoCWatchAnalyzer/>
+      <SoCWatchAnalyzer />
     </>
-  )
+  );
 }
 
-export default App
+export default App;

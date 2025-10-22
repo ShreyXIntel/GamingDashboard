@@ -1868,7 +1868,7 @@ const SoCWatchAnalyzer = () => {
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
             <Cpu className="w-8 h-8" style={{ color: colors.headerText }} />
-            <h1 className="text-2xl font-black" style={{ color: colors.headerText }}>Intel SoC Watch Analyzer</h1>
+            <h1 className="text-2xl font-black" style={{ color: colors.headerText }}>Intel SoC Vision</h1>
           </div>
 
           {/* Color Palette Switcher */}
